@@ -7,7 +7,7 @@ namespace ConveyApi
     {
         public CreateAccount(Guid id, string email, string password)
         {
-            Id = id;
+            Id = id == Guid.Empty ? Guid.NewGuid() : id;
             Email = email;
             Password = password;
         }

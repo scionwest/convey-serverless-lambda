@@ -4,9 +4,45 @@
   "Description": "An AWS Serverless Application that uses the ASP.NET Core framework running in Amazon Lambda.",
 
   "Parameters": {
+    "ShouldCreateTable": {
+      "Type": "String",
+      "AllowedValues": [ "true", "false" ],
+      "Default": "true",
+      "Description": "If true then the DynamoDB blogging table will be created with the CloudFormation stack."
+    },
+    "AccountTableName": {
+      "Type": "String",
+      "Default": "convey-prod-accounts",
+      "Description": "Name of DynamoDB table used to store accounts. If left blank a new table will be created.",
+      "MinLength": "0"
+    },
+    "ReadCapacity": {
+      "Type": "Number",
+      "Description": "Read capacity for the DynamoDB blog table.",
+      "Default": "2",
+      "MinValue": 1
+    },
+    "WriteCapacity": {
+      "Type": "Number",
+      "Description": "Write capacity for the DynamoDB blog table.",
+      "Default": "2",
+      "MinValue": 1
+    }
   },
 
   "Conditions": {
+    "CreateAccountTable": {
+      "Fn::Equals": [
+        { "Ref": "ShouldCreateTable" },
+        "true"
+      ]
+    },
+    "TableNameGenerated": {
+      "Fn::Equals": [
+        { "Ref": "AccountTableName" },
+        ""
+      ]
+    }
   },
 
   "Resources": {
@@ -42,10 +78,49 @@
           }
         }
       }
+    },
+
+    "AccountTable": {
+      "Type": "AWS::DynamoDB::Table",
+      "Condition": "CreateAccountTable",
+      "Properties": {
+        "TableName": {
+          "Fn::If": [
+            "TableNameGenerated",
+            { "Ref": "AWS::NoValue" },
+            { "Ref": "AccountTableName" }
+          ]
+        },
+        "AttributeDefinitions": [
+          {
+            "AttributeName": "Id",
+            "AttributeType": "S"
+          }
+        ],
+        "KeySchema": [
+          {
+            "AttributeName": "Id",
+            "KeyType": "HASH"
+          }
+        ],
+        "ProvisionedThroughput": {
+          "ReadCapacityUnits": { "Ref": "ReadCapacity" },
+          "WriteCapacityUnits": { "Ref": "WriteCapacity" }
+        }
+      }
     }
   },
 
   "Outputs": {
+    "AccountTable": {
+      "Value": {
+        "Fn::If": [
+          "CreateAccountTable",
+          { "Ref": "AccountTable" },
+          { "Ref": "AccountTableName" }
+        ]
+      }
+    },
     "ApiURL": {
       "Description": "API endpoint URL for Prod environment",
       "Value": { "Fn::Sub": "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/" }

@@ -17,7 +17,9 @@ namespace ConveyApi
             // If we are running outside of the Lambda environment, run as a standard netcoreapp.
             if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("AWS_LAMBDA_FUNCTION_NAME")))
             {
-                CreateHostBuilder(args).Build().Run();
+                IHostBuilder hostBuilder = CreateHostBuilder(args);
+                var built = hostBuilder.Build();
+                built.Run();
             }
             else
             {
